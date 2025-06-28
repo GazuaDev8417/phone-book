@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as Contacts from 'expo-contacts'
 import { Contact } from 'expo-contacts'
 import { Feather } from '@expo/vector-icons'
 import ContactSolo from './src/component/ContactSolo'
 import AddContactForm from './src/component/AddContactForm'
+import FavoriteStar from './src/utils/FavoriteStar'
+import { getFavorites, toggleFavorite } from './src/utils/Favorites'
 import { StyleSheet, Text, View, StatusBar, FlatList, TouchableOpacity, Modal, TextInput, NativeSyntheticEvent, NativeScrollEvent } from 'react-native'
 
 
@@ -21,12 +23,15 @@ export default function App() {
   const [showAddContact, setShowAddContact] = useState<boolean>(false)
   const [isAtBottom, setIsAtBottom] = useState<boolean>(false)
   const [search, setSearch] = useState<string>('')
+  const [favoritesMap, setFavoritesMap] = useState<Record<string,boolean>>({})
+  
   
 
 
 
   useEffect(()=>{
     getAllContacts()
+    loadFavorites()
   }, [])
 
   const getAllContacts = async()=>{
@@ -69,6 +74,21 @@ export default function App() {
   })
 
 
+  const loadFavorites = async()=>{
+    const favs = await getFavorites()
+    const map:Record<string, boolean> = {}
+    favs.forEach(id => (map[id] = true))
+    setFavoritesMap(map)
+  }
+
+  const toggleFavoriteForId = useCallback(async(id:string)=>{
+    await toggleFavorite(id)
+    setFavoritesMap(prev =>({
+      ...prev, [id]: !prev[id]
+    }))
+  }, [setFavoritesMap])
+
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle='dark-content' />
@@ -78,8 +98,11 @@ export default function App() {
         animationType='slide'
         transparent={false}
         onRequestClose={() => setShowContact(false)}>
-
-          <ContactSolo contact={contact ?? null} setShowContact={setShowContact} />
+          <ContactSolo 
+            contact={contact ?? null} 
+            setShowContact={setShowContact}
+            isFavorite={!!favoritesMap[contact?.id ?? '']}
+            toggleFavorite={() => contact?.id && toggleFavoriteForId(contact.id)}/>          
       </Modal>
       <Modal
         visible={showAddContact}
@@ -127,17 +150,22 @@ export default function App() {
         ref={flatlistRef}
         data={filteredContacts}
         onScroll={handleScroll}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={item => item.id}
         renderItem={({ item }) => {
           const phoneNumbers = item.phoneNumbers
           return(
-            <TouchableOpacity style={styles.content} onPress={() => handlePress(item.id!)} >
-              <Text>Nome: {item.name}</Text>
-              <Text>
-                Número: {phoneNumbers?.[0]?.number ?? 'Sem número'}
-              </Text>
-              <Text>Tipo de contato: {item.contactType === 'person' ? 'Pessoa' : 'Empresa'}</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection:'row', alignItems:'center', gap:10}}>
+              <TouchableOpacity style={styles.content} onPress={() => handlePress(item.id!)} >
+                <Text>Nome: {item.name}</Text>
+                <Text>
+                  Número: {phoneNumbers?.[0]?.number ?? 'Sem número'}
+                </Text>
+                <Text>Tipo de contato: {item.contactType === 'person' ? 'Pessoa' : 'Empresa'}</Text>
+              </TouchableOpacity>
+              <FavoriteStar 
+                isFavorite={!!favoritesMap[item.id!]}
+                setIsFavorite={() => toggleFavoriteForId(item.id!)}/>
+            </View>
           )
         }}/>
     </View>
@@ -151,7 +179,9 @@ const styles = StyleSheet.create({
   },
   content: {
     borderWidth: 1,
-    margin: 10,
+    width: 300,
+    marginVertical: 10,
+    marginLeft: 20,
     padding: 10,
     borderRadius: 10
   },

@@ -5,13 +5,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Contact } from "expo-contacts"
 import { Feather, Ionicons } from '@expo/vector-icons'
 import AddNoteContent from "./AddNoteContent"
+import FavoriteStar from "../utils/FavoriteStar"
 import { View, Text, TouchableOpacity, StyleSheet, Image, Modal, FlatList } from 'react-native'
 
 
 
 type ContactProps = {
-     contact: Contact | null
-     setShowContact: (value:boolean) => void
+    contact: Contact | null
+    setShowContact: (value:boolean) => void
+    isFavorite: boolean
+    toggleFavorite: () => void
 }
 
 
@@ -23,12 +26,13 @@ type Notes = {
 
 
 
-const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
+const ContactSolo = ({ setShowContact, contact, isFavorite, toggleFavorite }: ContactProps)=>{
     const [imageUri, setImageUri] = useState<string | null>(null)
     const [showModal, setShowModal] = useState<boolean>(false)
     const [notes, setNotes] = useState<Notes[]>([])
-    const [refreshing, setRefreshing] = useState(false);
-
+    const [refreshing, setRefreshing] = useState(false)
+    
+    
 
 
 
@@ -159,6 +163,9 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
         }
     }
 
+
+
+
     
     
 
@@ -195,9 +202,12 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
                 <Text style={styles.contactProperties}>Tipo:
                     <Text style={styles.propertieValues}> {contact?.contactType === 'person' ? 'Pessoa' : 'Empresa'}</Text>
                 </Text>
-                <Text style={styles.contactProperties}>Favoritos:
-                    <Text style={styles.propertieValues}> {contact?.isFavorite ? 'Sim' : 'Não'}</Text>
-                </Text>
+                <View style={{flexDirection:'row', alignItems:'center', justifyContent:'space-between', gap:30}}>
+                    <Text style={styles.contactProperties}>Favoritos:
+                        <Text style={styles.propertieValues}> {contact?.isFavorite || isFavorite ? 'Sim' : 'Não'}</Text>                    
+                    </Text>
+                    <FavoriteStar isFavorite={isFavorite} setIsFavorite={toggleFavorite} />
+                </View>                
                 <Text style={styles.contactProperties}>Com imagem:
                     <Text style={styles.propertieValues}> {contact?.imageAvailable || imageUri ? 'Sim' : 'Não'}</Text>
                 </Text>
