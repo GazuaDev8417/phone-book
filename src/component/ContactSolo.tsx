@@ -59,10 +59,36 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
     }, [contact])
 
 
+    const loadImage = async()=>{
+        if(!contact?.id){
+            console.warn('Contato inválido!')
+            return
+        }
+
+        const IMAGE_KEY = contact.id
+        try{
+            const uri = await AsyncStorage.getItem(IMAGE_KEY)
+            
+            return uri
+        }catch(e){
+            console.error(`Erro ao carregar imagem: ${e}`)
+        }
+    }
+    
+
+    useEffect(()=>{
+        const fetchImage = async()=>{
+            const saved = await loadImage()
+            if(saved) setImageUri(saved)
+        }
+        fetchImage()
+    }, [])
+
+
 
     const getNotes = async()=>{
         if(!contact?.id){
-            console.warn('Contato invákudo!')
+            console.warn('Contato inválido!')
             return
         }
 
@@ -78,7 +104,7 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
 
     const loadNotes = async(newNotes:Notes[])=>{
         if(!contact?.id){
-            console.warn('Contato invákudo!')
+            console.warn('Contato inválido!')
             return
         }
 
@@ -98,15 +124,15 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
 
 
     const saveImage = async(imageSrc:string)=>{
+        if(!contact?.id){
+            console.warn('Contato inválido!')
+            return
+        }
+
+        const IMAGE_KEY = contact.id
         try{
-            const newPath = imageSrc.split('/').pop()
-
-            if(!newPath){
-                throw new Error('Faltando diretório ou nome do arquivo')
-            }
-
-            
-            return newPath
+            await AsyncStorage.setItem(IMAGE_KEY, imageSrc)
+            return imageSrc
         }catch(e){
             console.error(`Erro salvar image: ${e}`)
         }
@@ -147,9 +173,11 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
             </TouchableOpacity>
             <View style={styles.top}>
                 {imageUri ? (
-                    <Image
-                        source={{ uri: imageUri }}
-                        style={{ width: 100, height: 100, borderRadius: 50 }}/>
+                    <TouchableOpacity onPress={pickImage}>
+                        <Image
+                            source={{ uri: imageUri }}
+                            style={{ width: 150, height: 150, borderRadius: 100 }}/>
+                    </TouchableOpacity>
                 ) : (
                     <TouchableOpacity onPress={pickImage}>
                         <Ionicons name="person-circle" size={150} color='gray'/>
@@ -171,7 +199,7 @@ const ContactSolo = ({ setShowContact, contact }: ContactProps)=>{
                     <Text style={styles.propertieValues}> {contact?.isFavorite ? 'Sim' : 'Não'}</Text>
                 </Text>
                 <Text style={styles.contactProperties}>Com imagem:
-                    <Text style={styles.propertieValues}> {contact?.imageAvailable ? 'Sim' : 'Não'}</Text>
+                    <Text style={styles.propertieValues}> {contact?.imageAvailable || imageUri ? 'Sim' : 'Não'}</Text>
                 </Text>
             </View>
             <Modal
@@ -226,7 +254,8 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     title: {
-        fontSize: 20
+        fontSize: 20,
+        marginTop: 10
     },
     contactData: {
         marginTop: 50,

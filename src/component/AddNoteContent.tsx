@@ -1,8 +1,9 @@
-import { useState } from "react"
+import React, { useState } from "react"
 import { Contact } from "expo-contacts"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Feather } from '@expo/vector-icons'
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native"
+
 
 
 
