@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as Contacts from 'expo-contacts'
 import { Contact } from 'expo-contacts'
-import { Feather } from '@expo/vector-icons'
+import { MaterialIcons } from '@expo/vector-icons'
 import ContactSolo from './src/component/ContactSolo'
 import AddContactForm from './src/component/AddContactForm'
 import FavoriteStar from './src/utils/FavoriteStar'
+import formatPhoneNumber from './src/utils/FormatPhoneNumber'
 import { getFavorites, toggleFavorite } from './src/utils/Favorites'
 import { StyleSheet, Text, View, StatusBar, FlatList, TouchableOpacity, Modal, TextInput, NativeSyntheticEvent, NativeScrollEvent } from 'react-native'
 
@@ -24,6 +25,8 @@ export default function App() {
   const [isAtBottom, setIsAtBottom] = useState<boolean>(false)
   const [search, setSearch] = useState<string>('')
   const [favoritesMap, setFavoritesMap] = useState<Record<string,boolean>>({})
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false)
+
   
   
 
@@ -70,7 +73,10 @@ export default function App() {
 
 
   const filteredContacts = contacts && contacts.filter(item=>{
-        return item.name.toLowerCase().includes(search.toLowerCase())
+        const matchesSearches =  item.name.toLowerCase().includes(search.toLowerCase())
+        const isFavorite = favoritesMap[item.id ?? '']
+        
+        return matchesSearches && (!showOnlyFavorites || isFavorite)
   })
 
 
@@ -92,7 +98,6 @@ export default function App() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle='dark-content' />
-
       <Modal
         visible={showContact}
         animationType='slide'
@@ -109,15 +114,17 @@ export default function App() {
         animationType='slide'
         transparent={false}
         onRequestClose={() => setShowAddContact(false)}>
-
           <AddContactForm setShowAddContact={setShowAddContact} />
       </Modal>
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Feather name='user-plus' size={30}/>
+        <TouchableOpacity onPress={() => setShowOnlyFavorites(prev => !prev)}>
+          <MaterialIcons 
+            name={showOnlyFavorites ? 'people' : 'star'}
+            color={showOnlyFavorites ? 'black' : 'gold'}
+            size={30}/>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setShowAddContact(true)}>
-          <Feather name='user-plus' size={30}/>
+          <MaterialIcons name='person-add-alt-1' size={30}/>
         </TouchableOpacity>
       </View>
       <Text style={styles.title}>Lista de Contatos</Text>
@@ -154,13 +161,13 @@ export default function App() {
         renderItem={({ item }) => {
           const phoneNumbers = item.phoneNumbers
           return(
-            <View style={{flexDirection:'row', alignItems:'center', gap:10}}>
+            <View style={{flexDirection:'row', alignItems:'center', gap:10, borderBottomWidth:1, marginHorizontal:10}}>
               <TouchableOpacity style={styles.content} onPress={() => handlePress(item.id!)} >
-                <Text>Nome: {item.name}</Text>
-                <Text>
-                  Número: {phoneNumbers?.[0]?.number ?? 'Sem número'}
+                <Text style={{fontSize:20, fontWeight:400, marginBottom:10, color:'blue'}}>{item.name}</Text>
+                <Text style={{fontSize:18, color:'green', marginBottom:5}}>
+                  {formatPhoneNumber(phoneNumbers?.[0]?.number ?? 'Sem número')}
                 </Text>
-                <Text>Tipo de contato: {item.contactType === 'person' ? 'Pessoa' : 'Empresa'}</Text>
+                <Text style={{fontSize:16}}>Tipo de contato: {item.contactType === 'person' ? 'Pessoa' : 'Empresa'}</Text>
               </TouchableOpacity>
               <FavoriteStar 
                 isFavorite={!!favoritesMap[item.id!]}
@@ -178,11 +185,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40
   },
   content: {
-    borderWidth: 1,
     width: 300,
-    marginVertical: 10,
-    marginLeft: 20,
-    padding: 10,
+    marginVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 10
   },
   header: {
@@ -193,12 +198,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 10
   },
   title: {
-    fontSize: 20,
+    fontSize: 25,
     textAlign: 'center'
   },
   btnScroll: {
     marginHorizontal: 70,
-    marginVertical: 10,
+    marginTop: 10,
+    marginBottom: 30,
     padding: 5,
     borderRadius: 10,
     height: 30

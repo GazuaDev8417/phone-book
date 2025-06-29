@@ -5,7 +5,6 @@ import { MaterialIcons } from '@expo/vector-icons'
 
 
 interface Props{
-    //contactId:string
     isFavorite: boolean
     setIsFavorite: (value:boolean) => void
 }
